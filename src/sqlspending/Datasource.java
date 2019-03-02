@@ -11,6 +11,7 @@ public class Datasource {
     public static final String TABLE_NAME = "spending";
     public static final String ID_COLUMN = "_id";
     public static final String DATE_COLUMN = "date";
+    public static final String MONTH_WEEK_COLUMN = "month_week";
     public static final String AMOUNT_COLUMN = "amount";
     public static final String CATEGORY_COLUMN = "category";
 
@@ -30,8 +31,8 @@ public class Datasource {
         try(Statement statement = connection.createStatement()){
 //            statement.execute("DROP TABLE " + TABLE_NAME); // FOR DEBUGGING
             statement.execute("CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(" + ID_COLUMN +
-                    " INTEGER PRIMARY KEY, " + DATE_COLUMN + " TEXT, " + AMOUNT_COLUMN + " FLOAT, "
-                    + CATEGORY_COLUMN + " TEXT)");
+                " INTEGER PRIMARY KEY, " + DATE_COLUMN + " TEXT, " + MONTH_WEEK_COLUMN + " INTEGER, " + AMOUNT_COLUMN
+                    + " FLOAT, " + CATEGORY_COLUMN + " TEXT)");
 
         } catch(SQLException e){
             System.out.println("ERROR CREATING TABLE " + e.getMessage());
@@ -45,8 +46,9 @@ public class Datasource {
         openDatabase();
 
         try(Statement statement = connection.createStatement()){
-            statement.execute("INSERT INTO " + TABLE_NAME + "(" + DATE_COLUMN + ", " + AMOUNT_COLUMN + ", " +
-                                 CATEGORY_COLUMN + ") VALUES('" + date + "', " + amount + ", '" + category + "')");
+            statement.execute("INSERT INTO " + TABLE_NAME + "(" + DATE_COLUMN + ", " + MONTH_WEEK_COLUMN + ", "
+                + AMOUNT_COLUMN + ", " + CATEGORY_COLUMN + ") VALUES('" + date + "', " + Spending.weekOfCurrentMonth()
+                + ", " + amount + ", '" + category + "')");
 
         } catch(SQLException e){
             System.out.println("ERROR INSERTING RECORD: " + e.getMessage());
@@ -66,9 +68,10 @@ public class Datasource {
                 spent.setDate(result.getString(DATE_COLUMN));
                 spent.setAmount(result.getDouble(AMOUNT_COLUMN));
                 spent.setCategory(result.getString(CATEGORY_COLUMN));
+                spent.setWeekOfMonth(result.getInt(MONTH_WEEK_COLUMN));
                 spendings.add(spent);
                 System.out.println("DATE = " + spent.getDate() + ", AMOUNT (£) = " +spent.getAmount() +
-                        ", CATEGORY = " + spent.getCategory());
+                        ", CATEGORY = " + spent.getCategory() + ", WEEK = " + spent.getWeekOfMonth());
             }
             return spendings;
         } catch(SQLException e){
@@ -79,9 +82,14 @@ public class Datasource {
 
     public void getMonthSpending(){
         double monthTotal;
-        ArrayList<Spending> spendings = querySpending();
-        monthTotal = Spending.calculateMonthTotal(spendings);
+        monthTotal = Spending.calculateMonthTotal(querySpending());
         System.out.println("MONTH TOTAL = £" + monthTotal);
+    }
+
+    public void getWeekSpending(){
+        double weekTotal;
+        weekTotal = Spending.calculateWeekTotal(querySpending());
+        System.out.println("WEEK TOTAL = £" + weekTotal);
     }
 
 }
