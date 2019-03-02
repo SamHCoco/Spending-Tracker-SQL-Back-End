@@ -5,8 +5,8 @@ import java.util.Calendar;
 public class Spending {
     private String category;
     private String date;
+    private int weekOfMonth;
     private double amount;
-    private int id;
 
     // setters
     public void setCategory(String category){
@@ -18,6 +18,7 @@ public class Spending {
     public void setDate(String date){
         this.date = date;
     }
+    public void setWeekOfMonth(int weekOfMonth){ this.weekOfMonth = weekOfMonth; }
 
     // getters
     public String getCategory(){
@@ -29,6 +30,7 @@ public class Spending {
     public String getDate(){
         return date;
     }
+    public int getWeekOfMonth(){return weekOfMonth; }
 
     public static String findCurrentDate(){
         Calendar calendar = Calendar.getInstance();
@@ -45,11 +47,18 @@ public class Spending {
         return(date + "-" + month + "-" + year);
     }
 
-    // finds the current month
+    // finds the current month by slicing the date string
     public static String getCurrentMonth(){
         String month = findCurrentDate();
         return month.substring(3, 5);
     }
+
+    // finds the week ( from 1 - 4) of the current month
+    public static int weekOfCurrentMonth(){
+        Calendar calendar = Calendar.getInstance();
+        return calendar.get(Calendar.WEEK_OF_MONTH) + 1; // + 1 since first week = 0
+    }
+
 
     // calculates the total spent so far in the current month
     public static double calculateMonthTotal(ArrayList<Spending> records){
@@ -64,4 +73,21 @@ public class Spending {
         }
         return monthSpendingTotal;
     }
+
+    public static double calculateWeekTotal(ArrayList<Spending> records){
+        String currentMonth = getCurrentMonth();
+        String month;
+        int weekOfCurrentMonth = Spending.weekOfCurrentMonth();
+        int weekOfMonth;
+        double weekTotal = 0;
+        for(int i = 0; i < records.size(); i++){
+            month = records.get(i).getDate();
+            weekOfMonth = records.get(i).getWeekOfMonth();
+            if(currentMonth.equals(month.substring(3, 5)) && weekOfCurrentMonth == weekOfMonth){
+                    weekTotal += records.get(i).getAmount();
+            }
+        }
+        return weekTotal;
+    }
+
 }
