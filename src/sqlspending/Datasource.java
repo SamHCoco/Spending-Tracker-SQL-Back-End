@@ -56,7 +56,7 @@ public class Datasource {
         }
     }
     // Fetches records to display to user
-    public ArrayList<Spending> querySpending(){
+    public ArrayList<Spending> querySpending(boolean printQuery){
         ArrayList<Spending> spendings = new ArrayList<>();
         openDatabase();
 
@@ -70,9 +70,12 @@ public class Datasource {
                 spent.setCategory(result.getString(CATEGORY_COLUMN));
                 spent.setWeekOfMonth(result.getInt(MONTH_WEEK_COLUMN));
                 spendings.add(spent);
-                System.out.println("DATE = " + spent.getDate() + ", AMOUNT (£) = " +spent.getAmount() +
-                        ", CATEGORY = " + spent.getCategory() + ", WEEK = " + spent.getWeekOfMonth());
+                if(printQuery){
+                    System.out.println("DATE = " + spent.getDate() + ", AMOUNT (£) = " +spent.getAmount() +
+                            ", CATEGORY = " + spent.getCategory() + ", WEEK = " + spent.getWeekOfMonth());
+                }
             }
+            System.out.println("************************************************************************"); // To improve output readability
             return spendings;
         } catch(SQLException e){
             System.out.println("ERROR QUERYING RECORDS" + e.getMessage());
@@ -80,16 +83,26 @@ public class Datasource {
         }
     }
 
-    public void getMonthSpending(){
+    public double getMonthSpending(){
         double monthTotal;
-        monthTotal = Spending.calculateMonthTotal(querySpending());
+        monthTotal = Spending.calculateMonthTotal(querySpending(false));
         System.out.println("MONTH TOTAL = £" + monthTotal);
+        System.out.println("************************************************************************"); // To improve output readability
+        return monthTotal;
     }
 
     public void getWeekSpending(){
         double weekTotal;
-        weekTotal = Spending.calculateWeekTotal(querySpending());
+        weekTotal = Spending.calculateWeekTotal(querySpending(false));
         System.out.println("WEEK TOTAL = £" + weekTotal);
+        System.out.println("************************************************************************"); // To improve output readability
+    }
+
+    public void categorySpending(){
+        double[] categoryPercentages = Spending.calculateStats(querySpending(false));
+        Spending.displayStats(categoryPercentages);
+        System.out.println("************************************************************************"); // To improve output readability
+        System.out.println("************************************************************************"); // To improve output readability
     }
 
 }
