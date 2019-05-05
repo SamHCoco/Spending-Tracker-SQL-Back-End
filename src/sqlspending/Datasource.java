@@ -1,5 +1,7 @@
 package sqlspending;
+
 import java.sql.*;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 public class Datasource {
@@ -15,32 +17,45 @@ public class Datasource {
     public static final String AMOUNT_COLUMN = "amount";
     public static final String CATEGORY_COLUMN = "category";
 
-    //  Opens database or creates on if one does not exist
+    /**
+     * Constructor for datasource. Creates spending table if one does not exist.
+     */
+    public Datasource(){
+        createTable();
+    }
+
+    /**
+     * Opens database or creates on if one does not exist.
+     */
     public void openDatabase(){
         try{
             connection = DriverManager.getConnection(CONNECTION);
         } catch(SQLException e){
             System.out.println("ERROR OPENING DATABASE: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
-    // creates table in database if one does not exist
+    /**
+     * creates spending table in database if one does not exist.
+     */
     public void createTable(){
         openDatabase();
         try(Statement statement = connection.createStatement()){
-//            statement.execute("DROP TABLE " + TABLE_NAME); // FOR DEBUGGING
             statement.execute("CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(" + ID_COLUMN +
                 " INTEGER PRIMARY KEY, " + DATE_COLUMN + " TEXT, " + MONTH_WEEK_COLUMN + " INTEGER, " + AMOUNT_COLUMN
                     + " FLOAT, " + CATEGORY_COLUMN + " TEXT)");
 
         } catch(SQLException e){
             System.out.println("ERROR CREATING TABLE " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
-    // Inserts a record (row) into the spending = table
+    /**
+     * Inserts a single record (row) into the spending table.
+     * The column values entered are the date, week of the month, amount and category.
+     * @param amount The amount spent.
+     * @param category The category of the spending.
+     */
     public void insertRecord(double amount, String category){
         String date = Spending.findCurrentDate();
         openDatabase();
@@ -52,14 +67,18 @@ public class Datasource {
 
         } catch(SQLException e){
             System.out.println("ERROR INSERTING RECORD: " + e.getMessage());
-            e.printStackTrace();
         }
     }
-    // Fetches records to display to user
+
+    /**
+     * Fetches all records in the spending table and returns them.
+     * @param printQuery Boolean parameter that determines whether the record entries are printed or not.
+     * @return An ArrayList of Spending objects, each of which correspond to a single record in spending table.
+     */
     public ArrayList<Spending> querySpending(boolean printQuery){
+        DecimalFormat df = new DecimalFormat("0.00");
         ArrayList<Spending> spendings = new ArrayList<>();
         openDatabase();
-
         try(Statement statement = connection.createStatement();
             ResultSet result = statement.executeQuery("SELECT * FROM " + TABLE_NAME)){
 
@@ -71,11 +90,11 @@ public class Datasource {
                 spent.setWeekOfMonth(result.getInt(MONTH_WEEK_COLUMN));
                 spendings.add(spent);
                 if(printQuery){
-                    System.out.println("DATE = " + spent.getDate() + ", AMOUNT (£) = " +spent.getAmount() +
-                            ", CATEGORY = " + spent.getCategory() + ", WEEK = " + spent.getWeekOfMonth());
+                    System.out.println("DATE = " + spent.getDate() + ", AMOUNT = £" + df.format(spent.getAmount()) +
+                            ", CATEGORY = " + spent.getCategory());
                 }
             }
-            System.out.println("************************************************************************"); // To improve output readability
+            System.out.println("************************************************************************");
             return spendings;
         } catch(SQLException e){
             System.out.println("ERROR QUERYING RECORDS" + e.getMessage());
@@ -83,26 +102,37 @@ public class Datasource {
         }
     }
 
+    /**
+     * Prints and returns how much was spent in the current month.
+     * @return How much was spent in the current month.
+     */
     public double getMonthSpending(){
         double monthTotal;
         monthTotal = Spending.calculateMonthTotal(querySpending(false));
         System.out.println("MONTH TOTAL = £" + monthTotal);
-        System.out.println("************************************************************************"); // To improve output readability
+        System.out.println("************************************************************************");
         return monthTotal;
     }
 
-    public void getWeekSpending(){
+    /**
+     * Prints and returns how much was spent in the current week.
+     * @return How much was spent in the current week.
+     */
+    public double getWeekSpending(){
         double weekTotal;
         weekTotal = Spending.calculateWeekTotal(querySpending(false));
         System.out.println("WEEK TOTAL = £" + weekTotal);
-        System.out.println("************************************************************************"); // To improve output readability
+        System.out.println("************************************************************************");
+        return weekTotal;
     }
 
+    /**
+     * Displays category spending as % of total month spending to user.
+     */
     public void categorySpending(){
         double[] categoryPercentages = Spending.calculateStats(querySpending(false));
         Spending.displayStats(categoryPercentages);
-        System.out.println("************************************************************************"); // To improve output readability
-        System.out.println("************************************************************************"); // To improve output readability
+        System.out.println("************************************************************************");
+        System.out.println("************************************************************************");
     }
-
 }
