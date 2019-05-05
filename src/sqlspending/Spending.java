@@ -1,12 +1,14 @@
 package sqlspending;
+
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 
 public class Spending {
-    private String category;
-    private String date;
-    private int weekOfMonth;
-    private double amount;
+    private String category;  // category of spending (6 in total)
+    private String date;  // date of spending
+    private int weekOfMonth;  // week in month (1 - 5)
+    private double amount;  // amount spent
 
     // setters
     public void setCategory(String category){
@@ -32,6 +34,10 @@ public class Spending {
     }
     public int getWeekOfMonth(){return weekOfMonth; }
 
+    /**
+     * Determines the current date and returns result in 'dd-mm-yyyy' format.
+     * @return The current data in 'dd-mm-yyyy' format.
+     */
     public static String findCurrentDate(){
         Calendar calendar = Calendar.getInstance();
         String date = String.valueOf(calendar.get(Calendar.DATE));
@@ -47,20 +53,30 @@ public class Spending {
         return(date + "-" + month + "-" + year);
     }
 
-    // finds the current month by slicing the date string
+    /**
+     * Finds the current month by slicing the date string, e.g 20-04-2018 returns '08'.
+     * @return The month, in 'mm' format, from a date of format 'dd-mm-yyyy'.
+     */
     public static String getCurrentMonth(){
         String month = findCurrentDate();
         return month.substring(3, 5);
     }
 
-    // finds the week ( from 1 - 4) of the current month
+    /**
+     * Determines the week of the current month (int: 1 - 5)
+     * @return Week of the current month
+     */
     public static int weekOfCurrentMonth(){
         Calendar calendar = Calendar.getInstance();
         return calendar.get(Calendar.WEEK_OF_MONTH);
     }
 
 
-    // calculates the total spent so far in the current month
+    /**
+     * calculates the total spent so far in the current month
+     * @param records ArrayList of all records in the spending table.
+     * @return The total amount spent in the current month.
+     */
     public static double calculateMonthTotal(ArrayList<Spending> records){
         String month;
         String currentMonth = getCurrentMonth();
@@ -74,23 +90,33 @@ public class Spending {
         return monthSpendingTotal;
     }
 
-    public static double calculateWeekTotal(ArrayList<Spending> record){
+    /**
+     * Calculates total spending for the current week.
+     * @param spending ArrayList of spending objects, with each object being a single record entry from spending table.
+     * @return The total amount spent in the current week.
+     */
+    public static double calculateWeekTotal(ArrayList<Spending> spending){
         String currentMonth = getCurrentMonth();
         String month;
         int weekOfCurrentMonth = Spending.weekOfCurrentMonth();
         int weekOfMonth;
         double weekTotal = 0;
-        for(int i = 0; i < record.size(); i++){
-            month = record.get(i).getDate();
-            weekOfMonth = record.get(i).getWeekOfMonth();
+        for(int i = 0; i < spending.size(); i++){
+            month = spending.get(i).getDate();
+            weekOfMonth = spending.get(i).getWeekOfMonth();
             if(currentMonth.equals(month.substring(3, 5)) && weekOfCurrentMonth == weekOfMonth){
-                    weekTotal += record.get(i).getAmount();
+                    weekTotal += spending.get(i).getAmount();
             }
         }
         return weekTotal;
     }
 
-
+    /**
+     * Calculates summary statistics for spending.
+     * Category totals and category spending as % of total month spending are calculated.
+     * @param spending ArrayList of spending objects, with each object being a single record entry from spending table.
+     * @return Array of category spending as % of total month spending, for every category
+     */
     public static double[] calculateStats(ArrayList<Spending> spending){
         double[] categories = new double[6];
         String currentMonth =  getCurrentMonth();
@@ -117,35 +143,39 @@ public class Spending {
                 }
             }
         }
-    // calculates (Amount spent on a category / total spending) * 100 to give category spending as % of total spending
+        // calculates category spending as a % of total monthly spending
         for(int i = 0; i < 6; i++){
             categories[i] = (categories[i] / monthTotal) * 100;
         }
         return categories;
     }
 
-
+    /**
+     * Displays category spending as % of total month spending to user.
+     * @param categories Array of total spending for each category.
+     */
     public static void displayStats(double[] categories){
+        DecimalFormat df = new DecimalFormat("#0");
         System.out.println("CATEGORY SPENDING SUMMARY STATISTICS");
         for(int i = 0; i < categories.length; i++){
             switch(i){
                 case 0:
-                    System.out.println("FOOD = " + categories[0] + "%");
+                    System.out.println("FOOD = " + df.format(categories[0]) + "%");
                     break;
                 case 1:
-                    System.out.println("TRANSPORT = " + categories[1] + "%");
+                    System.out.println("TRANSPORT = " + df.format(categories[1]) + "%");
                     break;
                 case 2:
-                    System.out.println("LEISURE = " + categories[2] + "%");
+                    System.out.println("LEISURE = " + df.format(categories[2]) + "%");
                     break;
                 case 3:
-                    System.out.println("CLOTHING = " + categories[3] + "%");
+                    System.out.println("CLOTHING = " + df.format(categories[3]) + "%");
                     break;
                 case 4:
-                    System.out.println("HOUSING = " + categories[4] + "%");
+                    System.out.println("HOUSING = " + df.format(categories[4]) + "%");
                     break;
                 case 5:
-                    System.out.println("MISC. = " + categories[5] + "%");
+                    System.out.println("MISC. = " + df.format(categories[5]) + "%");
                     break;
 
             }
