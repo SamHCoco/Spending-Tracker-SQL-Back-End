@@ -3,13 +3,13 @@ package sqlspending;
 import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class Datasource {
     private Connection connection;
-
+    private HashSet<String> categories;
     public static final String DB_NAME = "spending_record.db";
-    public static final String CONNECTION = "jdbc:sqlite:C:\\Users\\User_2\\Desktop\\Java Programs 2" +
-                                                            "\\SQLSpending\\" + DB_NAME;
+    public static final String CONNECTION = "jdbc:sqlite:" + System.getProperty("user.dir") + "\\" + DB_NAME;
     public static final String TABLE_NAME = "spending";
     public static final String ID_COLUMN = "_id";
     public static final String DATE_COLUMN = "date";
@@ -18,10 +18,18 @@ public class Datasource {
     public static final String CATEGORY_COLUMN = "category";
 
     /**
-     * Constructor for datasource. Creates spending table if one does not exist.
+     * Constructor for datasource.
+     * Creates spending table if one does not exist and defines spending categories
      */
     public Datasource(){
         createTable();
+        categories = new HashSet<>();
+        categories.add("FOOD");
+        categories.add("TRANSPORT");
+        categories.add("LEISURE");
+        categories.add("CLOTHING");
+        categories.add("HOUSING");
+        categories.add("MISC.");
     }
 
     /**
@@ -57,16 +65,81 @@ public class Datasource {
      * @param category The category of the spending.
      */
     public void insertRecord(double amount, String category){
-        String date = Spending.findCurrentDate();
-        openDatabase();
+        category = category.toUpperCase();
+        if(amount > 0 && categories.contains(category)){
+            String date = Spending.findCurrentDate();
+            openDatabase();
+            try(Statement statement = connection.createStatement()){
+                statement.execute("INSERT INTO " + TABLE_NAME + "(" + DATE_COLUMN + ", " + MONTH_WEEK_COLUMN + ", "
+                        + AMOUNT_COLUMN + ", " + CATEGORY_COLUMN + ") VALUES('" + date + "', " + Spending.weekOfCurrentMonth()
+                        + ", " + amount + ", '" + category + "')");
 
-        try(Statement statement = connection.createStatement()){
-            statement.execute("INSERT INTO " + TABLE_NAME + "(" + DATE_COLUMN + ", " + MONTH_WEEK_COLUMN + ", "
-                + AMOUNT_COLUMN + ", " + CATEGORY_COLUMN + ") VALUES('" + date + "', " + Spending.weekOfCurrentMonth()
-                + ", " + amount + ", '" + category + "')");
+            } catch(SQLException e){
+                System.out.println("ERROR INSERTING RECORD: " + e.getMessage());
+            }
+        } else {
+            System.out.println("insertRecord ERROR: invalid input");
+        }
+    }
 
-        } catch(SQLException e){
-            System.out.println("ERROR INSERTING RECORD: " + e.getMessage());
+    /**
+     * Deletes a single record in the database spending table, specified by the _id parameter
+     * @param _id The ID of the record to be deleted.
+     */
+    public void deleteRecord(int _id){
+        if(_id > 0){
+            openDatabase();
+            try(Statement statement = connection.createStatement()) {
+                statement.execute("DELETE FROM " + TABLE_NAME + " WHERE " + ID_COLUMN + "=" + _id);
+            } catch (SQLException e){
+                System.out.println("deleteRecord ERROR: " + e.getMessage());
+            }
+            querySpending(true);
+        } else {
+            System.out.println("deleteRecord ERROR: invalid input");
+        }
+    }
+
+    /**
+     * Updates spending amount for a record entry by ID.
+     * @param _id The ID of the record entry to be updated.
+     * @param amount The new spending amount.
+     */
+    public void updateRecord(int _id,double amount){
+        if(amount > 0 && _id > 0){
+            openDatabase();
+            try(Statement statement = connection.createStatement()) {
+                statement.execute("UPDATE " + TABLE_NAME +
+                                       " SET " + AMOUNT_COLUMN + "=" + amount +
+                                       " WHERE " + ID_COLUMN + "=" + _id);
+                querySpending(true);
+            } catch (SQLException e){
+                System.out.println("updateRecord ERROR: " + e.getMessage());
+            }
+        } else {
+            System.out.println("updateRecord ERROR: invalid input");
+        }
+    }
+
+    /**
+     * Updates category for a record entry by ID.
+     * @param _id The ID of the record entry to be updated.
+     * @param category The new category.
+     */
+    public void updateRecord(int _id, String category){
+        category = category.toUpperCase();
+        if(_id > 0 && categories.contains(category)){
+            openDatabase();
+            try(Statement statement = connection.createStatement()) {
+                statement.execute("UPDATE " + TABLE_NAME +
+                                       " SET " + CATEGORY_COLUMN + "= " + "'" + category + "'" +
+                                       " WHERE " + ID_COLUMN + "=" + _id);
+                querySpending(true);
+            } catch (SQLException e){
+                System.out.println("updateRecord ERROR: " + e.getMessage());
+            }
+        } else {
+            System.out.println("updateRecord ERROR: Invalid input");
         }
     }
 
@@ -90,8 +163,10 @@ public class Datasource {
                 spent.setWeekOfMonth(result.getInt(MONTH_WEEK_COLUMN));
                 spendings.add(spent);
                 if(printQuery){
-                    System.out.println("DATE = " + spent.getDate() + ", AMOUNT = £" + df.format(spent.getAmount()) +
-                            ", CATEGORY = " + spent.getCategory());
+                    System.out.println( "ID " + result.getInt(ID_COLUMN) +
+                                        "| DATE = " + spent.getDate() +
+                                        ", AMOUNT = £" + df.format(spent.getAmount()) +
+                                        ", CATEGORY = " + spent.getCategory());
                 }
             }
             System.out.println("************************************************************************");
@@ -132,7 +207,6 @@ public class Datasource {
     public void categorySpending(){
         double[] categoryPercentages = Spending.calculateStats(querySpending(false));
         Spending.displayStats(categoryPercentages);
-        System.out.println("************************************************************************");
         System.out.println("************************************************************************");
     }
 }
